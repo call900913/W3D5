@@ -1,21 +1,46 @@
 require_relative 'db_connection'
 require 'active_support/inflector'
+
+
 # NB: the attr_accessor we wrote in phase 0 is NOT used in the rest
 # of this project. It was only a warm up.
 
 class SQLObject
   def self.columns
     # ...
-    DBConnection.execute2(<<-SQL)
+    return @columns if @columns
+    cols = DBConnection.execute2(<<-SQL).first
       SELECT
         *
       FROM
-        cats
+        #{self.table_name}
+      LIMIT
+        0
     SQL
+
+    cols.map!(&:to_sym)
+    @columns = cols
   end
 
+
   def self.finalize!
+
+
+    self.columns.each do |name|
+
+      define_method(name) do
+        self.attributes[name]
+      end
+
+      define_method("#{name}=") do |val|
+        self.attributes[name] = val
+      end
+
+    end
+
   end
+
+
 
   def self.table_name=(table_name)
     # ...
@@ -23,8 +48,10 @@ class SQLObject
   end
 
   def self.table_name
-    # ...
-    @table_name || name.downcase.chars.join('') + 's'
+    #using the inflector from active_support
+    @table_name || name.underscore.pluralize
+
+    # name.downcase.chars.join('') + 's'
   end
 
   def self.all
@@ -45,6 +72,7 @@ class SQLObject
 
   def attributes
     # ...
+    @attributes = {}
   end
 
   def attribute_values
