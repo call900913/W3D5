@@ -25,19 +25,17 @@ class SQLObject
 
   def self.finalize!
 
-
+    return @columns if @columns
     self.columns.each do |name|
 
       define_method(name) do
         self.attributes[name]
       end
 
-      define_method("#{name}=") do |val|
-        self.attributes[name] = val
+      define_method("#{name}=") do |value|
+        self.attributes[name] = value
       end
-
     end
-
   end
 
 
@@ -68,15 +66,38 @@ class SQLObject
 
   def initialize(params = {})
     # ...
-  end
 
+    params.each do |k, v|
+      k = k.to_sym
+
+      if self.class.columns.include?(k)
+        self.send("#{k}=", v)
+      else
+        raise "unknown attribute '#{k}'"
+      end
+
+    end
+  end
+=begin
+params.each do |attr_name, value|
+  # make sure to convert keys to symbols
+  attr_name = attr_name.to_sym
+  if self.class.columns.include?(attr_name)
+    self.send("#{attr_name}=", value)
+  else
+    raise "unknown attribute '#{attr_name}'"
+  end
+end
+
+=end
   def attributes
     # ...
-    @attributes = {}
+    @attributes ||= {}
   end
 
   def attribute_values
     # ...
+
   end
 
   def insert
